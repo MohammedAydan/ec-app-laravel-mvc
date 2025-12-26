@@ -146,4 +146,5 @@ class OrderController extends Controller
                 ->with('status', 'Payment could not be initiated: ' . $e->getMessage());
         }
     }
+
 }

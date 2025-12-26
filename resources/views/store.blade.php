@@ -62,7 +62,8 @@
                         <div
                             class="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 duration-300 h-full flex flex-col">
                             <div class="relative aspect-[4/5] overflow-hidden rounded-t-2xl bg-slate-100">
-                                <img src="{{ $item->image_url }}" alt="{{ $item->name }}"
+                                {{-- <img src="{{ $item->image_url }}" alt="{{ $item->name }}" --}}
+                                <img src="{{ $item->image_preview_url }}" alt="{{ $item->name }}"
                                     class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
                                     loading="lazy" />
                                 @if ($item->sale_price)
@@ -120,6 +121,17 @@
                     </a>
                 @endforeach
             </div>
+
+            @if ($items->hasPages())
+                <div class="border-t border-slate-200 pt-6 flex flex-col gap-4">
+                    <div class="text-sm text-slate-600">
+                        Showing {{ $items->firstItem() }}–{{ $items->lastItem() }} of {{ $items->total() }} products
+                    </div>
+                    <div class="flex justify-center">
+                        {{ $items->appends(request()->query())->links() }}
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

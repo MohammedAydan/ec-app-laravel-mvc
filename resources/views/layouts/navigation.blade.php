@@ -1,3 +1,10 @@
+@php
+    $user = Auth::user() ?? null;
+    $isRoleExits = $user && $user->role != null;
+    $isAdmin = $isRoleExits && $user->role->name == 'admin';
+    $isOwner = $isRoleExits && $user->role->name == 'owner';
+@endphp
+
 <nav x-data="{ open: false }" class="bg-white border-b border-gray-100 sticky top-0 z-50">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,11 +39,12 @@
                                 class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
                                 <div class="flex items-center gap-1">
                                     {{ Auth::user()->name }}
-                                    @if (Auth::user()->role->name == 'admin' || Auth::user()->role->name == 'owner')
+                                    @if ($isAdmin || $isOwner)
                                         <p class="uppercase">
                                             ({{ __(Auth::user()->role->name) }})
                                         </p>
                                     @endif
+
                                 </div>
 
                                 <div class="ms-1">
@@ -55,7 +63,7 @@
                                 {{ __('Profile') }}
                             </x-dropdown-link>
 
-                            @if (Auth::user()->role->name == 'admin' || Auth::user()->role->name == 'owner')
+                            @if ($isAdmin || $isOwner)
                                 <x-dropdown-link :href="route('dashboard')">
                                     {{ __('Dashboard') }}
                                 </x-dropdown-link>

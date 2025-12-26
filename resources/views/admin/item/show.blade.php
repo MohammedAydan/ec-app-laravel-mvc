@@ -11,7 +11,7 @@
     <x-slot name="header">
         <div class="bg-slate-900 text-white -mx-6 -mt-6 px-6 pb-8 pt-8 sm:-mx-8 sm:px-8">
             <div class="max-w-7xl mx-auto flex items-center gap-4">
-                <a href="{{ route('store.index') }}"
+                <a href="{{ route('admin.items.index') }}"
                     class="inline-flex items-center text-slate-300 hover:text-white transition">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
@@ -92,24 +92,27 @@
                             @endif
                         </div>
                         <div class="flex flex-col gap-3">
-                            <form method="POST"
-                                action="{{ route('store.cart.store', ['itemId' => $item->id, 'quantity' => 1]) }}">
-                                @csrf
-                                <button
-                                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-white px-6 py-4 text-sm font-semibold hover:bg-indigo-600 transition {{ $item->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
-                                    {{ $item->stock == 0 ? 'disabled' : '' }}>
+                            @if ($canUpdate ?? false)
+                                <a href="{{ route('admin.items.edit', $item) }}"
+                                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-white px-6 py-4 text-sm font-semibold hover:bg-indigo-600 transition">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M3 3h2l1 4h12l1.5-3H21" />
+                                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                     </svg>
-                                    Add to cart
-                                </button>
-                            </form>
+                                    Edit Product
+                                </a>
+                            @endif
 
-                            {{-- <button
-                                class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 text-slate-700 px-6 py-3 text-sm font-semibold hover:border-slate-300 transition">
-                                Save for later
-                            </button> --}}
+                            @if ($canDelete ?? false)
+                                <a href="{{ route('admin.items.delete', $item) }}"
+                                    class="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-rose-200 text-rose-600 px-6 py-3 text-sm font-semibold hover:bg-rose-50 transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete Product
+                                </a>
+                            @endif
                         </div>
                         <div class="text-sm text-slate-500 space-y-1">
                             <p>Free shipping over $50 • 30-day returns • Secure checkout</p>
@@ -117,80 +120,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- Featured Items --}}
-            <!-- Product Grid -->
-            <div class="w-full flex items-center justify-between mt-20 border-t pt-6">
-                <h2 class="text-2xl font-bold text-slate-900 mb-6">You may also like</h2>
-            </div>
-            <div class="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-
-                @foreach ($featuredItems as $item)
-                    <a href="{{ route('store.show', ['slug' => $item->slug]) }}" class="group relative">
-                        <div
-                            class="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 duration-300 h-full flex flex-col">
-                            <div class="relative aspect-[4/5] overflow-hidden rounded-t-2xl bg-slate-100">
-                                {{-- <img src="{{ $item->image_url }}" alt="{{ $item->name }}" --}}
-                                <img src="{{ $item->image_preview_url }}" alt="{{ $item->name }}"
-                                    class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                                    loading="lazy" />
-                                @if ($item->sale_price)
-                                    <span
-                                        class="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500 text-white shadow">Sale</span>
-                                @endif
-                                @if ($item->stock < 15)
-                                    <span
-                                        class="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white shadow">Low</span>
-                                @endif
-                            </div>
-
-                            <div class="p-5 flex-1 flex flex-col gap-4">
-                                <div class="space-y-1">
-                                    <h3
-                                        class="text-lg font-semibold text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition">
-                                        {{ $item->name }}</h3>
-                                    <p class="text-sm text-slate-500 line-clamp-2">{{ $item->description }}</p>
-                                </div>
-
-                                @if ($item->tags)
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach (array_slice($item->tags, 0, 2) as $tag)
-                                            <span
-                                                class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600">{{ $tag }}</span>
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                <div class="mt-auto flex items-center justify-between">
-                                    <div class="flex items-baseline gap-2">
-                                        @if ($item->sale_price)
-                                            <span
-                                                class="text-xl font-bold text-slate-900">${{ number_format($item->sale_price, 2) }}</span>
-                                            <span
-                                                class="text-sm text-slate-400 line-through">${{ number_format($item->price, 2) }}</span>
-                                        @else
-                                            <span
-                                                class="text-xl font-bold text-slate-900">${{ number_format($item->price, 2) }}</span>
-                                        @endif
-                                    </div>
-                                    <span class="text-xs text-slate-500">{{ $item->sales_count }} sold</span>
-                                </div>
-
-                                <button
-                                    class="w-full mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2.5 text-sm font-semibold hover:bg-indigo-600 transition">
-                                    View details
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </a>
-                @endforeach
-            </div>
-            {{-- End Featured Items --}}
-
         </div>
     </div>
 </x-app-layout>

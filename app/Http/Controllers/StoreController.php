@@ -34,14 +34,22 @@ class StoreController extends Controller
         return view('store', ['items' => $items]);
     }
 
-    public function show(Request $request, $slug)
+    public function show($slug)
     {
         $item = Item::where('slug', $slug)->firstOrFail();
 
-        if (!$item) {
-            abort(404, 'Item not found');
-        }
+        $featuredItems = Item::where('id', '!=', $item->id)
+            // tags overlap
+            ->where(function ($query) use ($item) {
+                $tags = is_iterable($item->tags) ? $item->tags : [];
+                foreach ($tags as $tag) {
+                    $query->orWhere('tags', 'like', '%' . $tag . '%');
+                }
+            })
+            ->inRandomOrder()
+            ->limit(4)
+            ->get();
 
-        return view('show', ['item' => $item]);
+        return view('show', ['item' => $item, 'featuredItems' => $featuredItems]);
     }
 }

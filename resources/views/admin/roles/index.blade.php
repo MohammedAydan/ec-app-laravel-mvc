@@ -19,7 +19,7 @@
         $canDelete = $permissions->contains('delete');
     @endphp
 
-    <div class="py-10">
+<div class="py-10">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
             @if (session('status'))
                 <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-xl text-sm">

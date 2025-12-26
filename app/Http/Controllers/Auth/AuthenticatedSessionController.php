@@ -26,6 +26,16 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = $request->user();
+
+        if ($user && ! $user->is_active) {
+            Auth::guard('web')->logout();
+
+            return back()->withErrors([
+                'email' => 'Your account is inactive. Please contact support.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('store.index', absolute: false));
