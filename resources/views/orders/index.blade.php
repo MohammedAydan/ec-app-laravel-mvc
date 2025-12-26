@@ -17,12 +17,7 @@
         </div>
     </x-slot>
 
-    @php
-        $totalSpend = $orders->sum('total_amount');
-        $pendingCount = $orders->where('order_status', 'pending')->count();
-        $completedCount = $orders->whereIn('order_status', ['completed', 'delivered'])->count();
-        $failedCount = $orders->whereIn('payment_status', ['failed', 'canceled', 'cancelled'])->count();
-    @endphp
+
 
     <div class="bg-slate-50 min-h-screen">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
@@ -155,6 +150,20 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+                    <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm text-slate-600">
+                        <div>
+                            Showing
+                            <span class="font-semibold text-slate-900">{{ $orders->firstItem() }}</span>
+                            to
+                            <span class="font-semibold text-slate-900">{{ $orders->lastItem() }}</span>
+                            of
+                            <span class="font-semibold text-slate-900">{{ $orders->total() }}</span>
+                            orders
+                        </div>
+                        <div class="flex items-center gap-2">
+                            {{ $orders->withQueryString()->links() }}
+                        </div>
                     </div>
                 @endif
             </div>

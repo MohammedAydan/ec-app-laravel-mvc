@@ -18,8 +18,32 @@ class OrderController extends Controller
             return redirect()->route('login');
         }
 
-        $orders = Order::where('user_id', $userId)->with('orderItems.item')->get();
-        return view('orders.index', ['orders' => $orders]);
+        $page = max((int) $request->input('page', 1), 1);
+        $perPage = (int) $request->input('limit', 10);
+        if ($perPage < 1) {
+            $perPage = 10;
+        }
+        $perPage = min($perPage, 50);
+
+        $baseQuery = Order::where('user_id', $userId);
+
+        $totalSpend = (clone $baseQuery)->sum('total_amount');
+        $pendingCount = (clone $baseQuery)->where('order_status', 'pending')->count();
+        $completedCount = (clone $baseQuery)->whereIn('order_status', ['completed', 'delivered'])->count();
+        $failedCount = (clone $baseQuery)->whereIn('payment_status', ['failed', 'canceled', 'cancelled'])->count();
+
+        $orders = (clone $baseQuery)
+            ->with('orderItems.item')
+            ->latest()
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return view('orders.index', [
+            'orders' => $orders,
+            'totalSpend' => $totalSpend,
+            'pendingCount' => $pendingCount,
+            'completedCount' => $completedCount,
+            'failedCount' => $failedCount,
+        ]);
     }
 
     public function show(Request $request, $orderId)
@@ -146,5 +170,4 @@ class OrderController extends Controller
                 ->with('status', 'Payment could not be initiated: ' . $e->getMessage());
         }
     }
-
 }

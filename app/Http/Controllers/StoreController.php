@@ -13,7 +13,7 @@ class StoreController extends Controller
     public function index(Request $request)
     {
         $page = (int) $request->input('page', 1);
-        $limit = min((int) $request->input('limit', 10), 60);
+        $limit = min((int) $request->input('limit', 12), 60);
         $search = (string) $request->input('search', '');
 
         if ($search !== '') {

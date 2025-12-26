@@ -126,66 +126,54 @@
             <div class="grid gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
                 @foreach ($featuredItems as $item)
-                    <a href="{{ route('store.show', ['slug' => $item->slug]) }}" class="group relative">
-                        <div
-                            class="bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-xl transition transform hover:-translate-y-1 duration-300 h-full flex flex-col">
-                            <div class="relative aspect-[4/5] overflow-hidden rounded-t-2xl bg-slate-100">
-                                {{-- <img src="{{ $item->image_url }}" alt="{{ $item->name }}" --}}
+                    <a href="{{ route('store.show', $item->slug) }}"
+                        class="group block focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-xl">
+
+                        <article
+                            class="bg-white border border-gray-200 rounded-xl overflow-hidden transition hover:shadow-md">
+
+                            <!-- Image -->
+                            <div class="aspect-[4/5] bg-gray-100 overflow-hidden">
                                 <img src="{{ $item->image_preview_url }}" alt="{{ $item->name }}"
-                                    class="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                                    class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                                     loading="lazy" />
-                                @if ($item->sale_price)
-                                    <span
-                                        class="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold bg-rose-500 text-white shadow">Sale</span>
-                                @endif
-                                @if ($item->stock < 15)
-                                    <span
-                                        class="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500 text-white shadow">Low</span>
-                                @endif
                             </div>
 
-                            <div class="p-5 flex-1 flex flex-col gap-4">
-                                <div class="space-y-1">
-                                    <h3
-                                        class="text-lg font-semibold text-slate-900 line-clamp-1 group-hover:text-indigo-600 transition">
-                                        {{ $item->name }}</h3>
-                                    <p class="text-sm text-slate-500 line-clamp-2">{{ $item->description }}</p>
+                            <!-- Content -->
+                            <div class="p-4 flex flex-col gap-3">
+                                <div>
+                                    <h3 class="text-sm font-medium text-gray-900 line-clamp-1">
+                                        {{ $item->name }}
+                                    </h3>
+                                    <p class="text-xs text-gray-500 line-clamp-2">
+                                        {{ $item->description }}
+                                    </p>
                                 </div>
 
-                                @if ($item->tags)
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach (array_slice($item->tags, 0, 2) as $tag)
-                                            <span
-                                                class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600">{{ $tag }}</span>
-                                        @endforeach
-                                    </div>
-                                @endif
-
-                                <div class="mt-auto flex items-center justify-between">
+                                <!-- Price -->
+                                <div class="flex items-center justify-between mt-auto">
                                     <div class="flex items-baseline gap-2">
                                         @if ($item->sale_price)
-                                            <span
-                                                class="text-xl font-bold text-slate-900">${{ number_format($item->sale_price, 2) }}</span>
-                                            <span
-                                                class="text-sm text-slate-400 line-through">${{ number_format($item->price, 2) }}</span>
+                                            <span class="text-base font-semibold text-gray-900">
+                                                ${{ number_format($item->sale_price, 2) }}
+                                            </span>
+                                            <span class="text-xs text-gray-400 line-through">
+                                                ${{ number_format($item->price, 2) }}
+                                            </span>
                                         @else
-                                            <span
-                                                class="text-xl font-bold text-slate-900">${{ number_format($item->price, 2) }}</span>
+                                            <span class="text-base font-semibold text-gray-900">
+                                                ${{ number_format($item->price, 2) }}
+                                            </span>
                                         @endif
                                     </div>
-                                    <span class="text-xs text-slate-500">{{ $item->sales_count }} sold</span>
-                                </div>
 
-                                <button
-                                    class="w-full mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 text-white px-4 py-2.5 text-sm font-semibold hover:bg-indigo-600 transition">
-                                    View details
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
+                                    <span class="text-xs text-gray-400">
+                                        {{ $item->sales_count }} sold
+                                    </span>
+                                </div>
                             </div>
-                        </div>
+
+                        </article>
                     </a>
                 @endforeach
             </div>
