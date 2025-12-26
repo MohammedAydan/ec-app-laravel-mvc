@@ -248,7 +248,7 @@
                                         {{ $index + 1 }}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-slate-900 truncate">{{ $row->item?->name ?? 'Removed' }}</p>
+                                        <p class="text-sm font-medium text-slate-900 truncate">{{ $row->item_name ?? 'Removed' }}</p>
                                         <p class="text-xs text-slate-500">{{ $row->qty }} sold</p>
                                     </div>
                                     <p class="text-sm font-semibold text-slate-900">${{ number_format($row->revenue, 2) }}</p>
@@ -269,7 +269,7 @@
                             @forelse ($topCustomers as $customer)
                                 <div class="px-5 py-3 flex items-center justify-between">
                                     <div>
-                                        <p class="text-sm font-medium text-slate-900">{{ $customer->user?->name ?? 'Unknown' }}</p>
+                                        <p class="text-sm font-medium text-slate-900">{{ $customer->user_name ?? 'Unknown' }}</p>
                                         <p class="text-xs text-slate-500">{{ $customer->orders }} orders</p>
                                     </div>
                                     <p class="text-sm font-semibold text-emerald-600">${{ number_format($customer->revenue, 2) }}</p>
