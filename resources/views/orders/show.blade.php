@@ -84,6 +84,9 @@
             </div>
 
             <!-- Actions -->
+            {{-- <div class="flex items-center justify-end">
+                <p>Payment must be completed within 1 hour.</p>
+            </div> --}}
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <a href="{{ route('orders.index') }}"
                     class="inline-flex items-center gap-2 text-slate-700 hover:text-indigo-600 font-semibold">
@@ -93,13 +96,14 @@
                     Back to orders
                 </a>
                 <div class="flex gap-3">
-                    <button
+                    {{-- <button
                         class="inline-flex items-center justify-center px-4 py-2 sm:rounded-3xl border border-slate-200 text-slate-700 hover:border-slate-300 transition">Download
                         invoice</button>
                     <button
                         class="inline-flex items-center justify-center px-4 py-2 sm:rounded-3xl bg-slate-900 text-white hover:bg-indigo-600 transition">Contact
-                        support</button>
-                    @if ($order->payment_status !== 'paid')
+                        support</button> --}}
+                    {{-- @if ($order->created_at && now()->diffInHours($order->created_at) > 1) --}}
+                    @if ($order->payment_status !== 'paid' && $order->order_status !== 'cancelled')
                         <form method="POST" action="{{ route('orders.payment', ['orderId' => $order->id]) }}"
                             onsubmit="this.querySelector('button[type=submit]').disabled = true;">
                             @csrf
@@ -108,6 +112,8 @@
                                 Payment</button>
                         </form>
                     @endif
+                    {{-- @endif --}}
+
                 </div>
             </div>
         </div>

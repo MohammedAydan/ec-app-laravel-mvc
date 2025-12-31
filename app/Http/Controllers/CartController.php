@@ -2,91 +2,87 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Cart;
+use App\Http\Services\CartService;
 use Illuminate\Http\Request;
 
 class CartController extends Controller
 {
+    private CartService $cartService;
+
+    public function __construct()
+    {
+        $this->cartService = new CartService();
+    }
+
     public function index(Request $request)
     {
-        $cartItems = Cart::where('user_id', $request->user()->id)->with('item')->get();
-        return view('cart.index', ['cartItems' => $cartItems]);
+        try {
+            $cartItems = $this->cartService->getMyCartItems($request->user()->id);
+            return view('cart.index', ['cartItems' => $cartItems]);
+        } catch (\Throwable $th) {
+            return redirect()->back()
+                ->withErrors('Could not load cart items at this time.')
+                ->with('error', $th->getMessage());
+        }
     }
 
     public function store(Request $request, $itemId, $quantity)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        if ($userId == null) {
-            return redirect()->route('login');
-        }
+            if ($userId == null) {
+                return redirect()->route('login');
+            }
 
-        $item = Cart::where('user_id', $userId)->where('item_id', $itemId)->first();
-
-        if ($item != null) {
-            $item->quantity += $quantity;
-            $item->save();
-
+            $this->cartService->create($userId, $itemId, $quantity);
             return redirect()->route('store.cart');
+        } catch (\Throwable $th) {
+            return redirect()->back()
+                ->withErrors('Could not add item to cart at this time.')
+                ->with('error', $th->getMessage());
         }
-
-        Cart::create([
-            'user_id' => $userId,
-            'item_id' => $itemId,
-            'quantity' => $quantity,
-        ]);
-
-        return redirect()->route('store.cart');
     }
 
     public function destroy(Request $request, $cartItemId)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        $cartItem = Cart::where('id', $cartItemId)->where('user_id', $userId)->first();
-
-        if (!$cartItem) {
-            abort(404, 'Cart item not found');
+            $this->cartService->delete($cartItemId, $userId);
+            return redirect()->route('store.cart');
+        } catch (\Throwable $th) {
+            return redirect()->back()
+                ->withErrors('Could not delete cart item at this time.')
+                ->with('error', $th->getMessage());
         }
-
-        $cartItem->delete();
-
-        return redirect()->route('store.cart');
     }
 
     public function incrementItemQuantity(Request $request, $cartItemId)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        $cartItem = Cart::where('id', $cartItemId)->where('user_id', $userId)->first();
-
-        if (!$cartItem) {
-            abort(404, 'Cart item not found');
+            $this->cartService->incrementItemQuantity($cartItemId, $userId);
+            return redirect()->route('store.cart');
+        } catch (\Throwable $th) {
+            return redirect()->back()
+                ->withErrors('Could not increment cart item quantity at this time.')
+                ->with('error', $th->getMessage());
         }
-
-        $cartItem->quantity += 1;
-        $cartItem->save();
-
-        return redirect()->route('store.cart');
     }
 
     public function decrementItemQuantity(Request $request, $cartItemId)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        $cartItem = Cart::where('id', $cartItemId)->where('user_id', $userId)->first();
-
-        if (!$cartItem) {
-            abort(404, 'Cart item not found');
+            $this->cartService->decrementItemQuantity($cartItemId, $userId);
+            return redirect()->route('store.cart');
+        } catch (\Throwable $th) {
+            return redirect()->back()
+                ->withErrors('Could not decrement cart item quantity at this time.')
+                ->with('error', $th->getMessage());
         }
-
-        if ($cartItem->quantity > 1) {
-            $cartItem->quantity -= 1;
-            $cartItem->save();
-        } else {
-            $cartItem->delete();
-        }
-
-        return redirect()->route('store.cart');
     }
 }

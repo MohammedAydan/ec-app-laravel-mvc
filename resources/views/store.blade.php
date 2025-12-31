@@ -47,13 +47,13 @@
                 </div>
             </div>
             <!-- Filters / Pills -->
-            <div class="flex flex-wrap gap-3">
+            {{-- <div class="flex flex-wrap gap-3">
                 @php $pills = ['All', 'Featured', 'On Sale', 'Audio', 'Accessories', 'Work', 'Gaming']; @endphp
                 @foreach ($pills as $pill)
                     <button
                         class="px-4 py-2 rounded-full text-sm font-medium border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:shadow-sm transition">{{ $pill }}</button>
                 @endforeach
-            </div>
+            </div> --}}
 
             <!-- Product Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

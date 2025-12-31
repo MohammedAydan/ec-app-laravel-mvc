@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Services\OrderService;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -10,164 +11,133 @@ use Srmklive\PayPal\Services\PayPal as PayPalClient;
 
 class OrderController extends Controller
 {
+    private OrderService $orderService;
+
+    public function __construct()
+    {
+        $this->orderService = new OrderService();
+    }
+
     public function index(Request $request)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        if ($userId == null) {
-            return redirect()->route('login');
+            if ($userId == null) {
+                return redirect()->route('login');
+            }
+
+            $page = max((int) $request->input('page', 1), 1);
+            $perPage = (int) $request->input('limit', 10);
+            if ($perPage < 1) {
+                $perPage = 10;
+            }
+            $perPage = min($perPage, 50);
+
+            $ordersData = $this->orderService->getMyOrders($userId, $perPage, $page);
+            return view('orders.index',  $ordersData);
+        } catch (\Throwable $th) {
+            return view('server-error', ['code' => 500, 'message' => $th->getMessage()]);
         }
-
-        $page = max((int) $request->input('page', 1), 1);
-        $perPage = (int) $request->input('limit', 10);
-        if ($perPage < 1) {
-            $perPage = 10;
-        }
-        $perPage = min($perPage, 50);
-
-        $baseQuery = Order::where('user_id', $userId);
-
-        $totalSpend = (clone $baseQuery)->sum('total_amount');
-        $pendingCount = (clone $baseQuery)->where('order_status', 'pending')->count();
-        $completedCount = (clone $baseQuery)->whereIn('order_status', ['completed', 'delivered'])->count();
-        $failedCount = (clone $baseQuery)->whereIn('payment_status', ['failed', 'canceled', 'cancelled'])->count();
-
-        $orders = (clone $baseQuery)
-            ->with('orderItems.item')
-            ->latest()
-            ->paginate($perPage, ['*'], 'page', $page);
-
-        return view('orders.index', [
-            'orders' => $orders,
-            'totalSpend' => $totalSpend,
-            'pendingCount' => $pendingCount,
-            'completedCount' => $completedCount,
-            'failedCount' => $failedCount,
-        ]);
     }
 
     public function show(Request $request, $orderId)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        if ($userId == null) {
-            return redirect()->route('login');
+            if ($userId == null) {
+                return redirect()->route('login');
+            }
+
+            $order = $this->orderService->getOrderById($orderId, $userId);
+
+            if (!$order) {
+                abort(404, 'Order not found');
+            }
+
+            return view('orders.show', ['order' => $order]);
+        } catch (\Throwable $th) {
+            return view('server-error', ['code' => 404, 'message' => $th->getMessage()]);
         }
-
-        $order = Order::where('id', $orderId)->where('user_id', $userId)->with('orderItems.item')->first();
-
-        if (!$order) {
-            abort(404, 'Order not found');
-        }
-
-        return view('orders.show', ['order' => $order]);
     }
 
     public function store(Request $request)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        if ($userId == null) {
-            return redirect()->route('login');
+            if ($userId == null) {
+                return redirect()->route('login');
+            }
+
+            $order = $this->orderService->create($userId, $request->input('shipping_address'));
+            return $this->pay($order);
+        } catch (\Throwable $th) {
+            return redirect()->back()
+                ->withErrors('Could not create order at this time.')
+                ->with('error', $th->getMessage());
         }
-
-        $cartItems = Cart::where('user_id', $userId)->with('item')->get();
-        if (!$cartItems || $cartItems->isEmpty()) {
-            abort(400, 'No items in the order');
-        }
-        $totalAmount = $cartItems->sum(function ($cart) {
-            $price = $cart->item?->sale_price ?? $cart->item?->price ?? 0;
-            return $cart->quantity * $price;
-        });
-
-        $order = Order::create([
-            'user_id' => $userId,
-            'total_amount' => $totalAmount,
-            'shipping_address' => $request->input('shipping_address') ?? 'N/A',
-            'order_status' => 'pending',
-            'payment_status' => 'pending',
-            'arrival_date' => null,
-        ]);
-
-        foreach ($cartItems as $item) {
-            $price = $item->item?->sale_price ?? $item->item?->price ?? 0;
-            OrderItem::create([
-                'order_id' => $order->id,
-                'item_id' => $item->item_id,
-                'quantity' => $item->quantity,
-                'price' => $price,
-            ]);
-        }
-
-        // Clear the cart after creating the order
-        Cart::where('user_id', $userId)->delete();
-        // return redirect()->route('orders.show', ['orderId' => $order->id]);
-        return $this->pay($order);
     }
 
     public function createOrderPayment(Request $request, $orderId)
     {
-        $userId = $request->user()->id;
+        try {
+            $userId = $request->user()->id;
 
-        if ($userId == null) {
-            return redirect()->route('login');
+            if ($userId == null) {
+                return redirect()->route('login');
+            }
+
+            $order = $this->orderService->getOrderById($orderId, $userId);
+
+            if (!$order) {
+                abort(404, 'Order not found');
+            }
+
+            return $this->pay($order);
+        } catch (\Throwable $th) {
+            return redirect()->back()
+                ->withErrors('Could not process payment at this time.')
+                ->with('error', $th->getMessage());
         }
-
-        $order = Order::where('id', $orderId)->where('user_id', $userId)->first();
-
-        if (!$order) {
-            return redirect()->route('orders.index')->with('error', 'Order not found.');
-        }
-
-        return $this->pay($order);
     }
 
     public function pay($order)
     {
-        // Skip payment if total is zero
-        if ($order->total_amount <= 0) {
-            return redirect()->route('orders.show', ['orderId' => $order->id]);
-        }
-
-        // PayPal provider
-        $provider = new PayPalClient;
-        $provider->setApiCredentials(config('paypal'));
-        $provider->getAccessToken();
-
-        // Create PayPal Order
-        $response = $provider->createOrder([
-            'intent' => 'CAPTURE',
-            'purchase_units' => [[
-                'reference_id' => (string) $order->id,
-                'amount' => [
-                    'currency_code' => 'USD',
-                    'value' => number_format($order->total_amount, 2, '.', '')
-                ]
-            ]],
-            'application_context' => [
-                'return_url' => route('paypal.payment.success'),
-                'cancel_url' => route('paypal.payment.cancel'),
-            ],
-        ]);
-
         try {
-            // Guard against missing/failed response
-            if (!is_array($response) || empty($response['links'])) {
-                return redirect()->route('orders.show', ['orderId' => $order->id])
-                    ->with('status', 'Payment could not be initiated.');
+            // Skip payment if total is zero
+            if ($order->total_amount <= 0) {
+                return redirect()->route('orders.show', ['orderId' => $order->id]);
             }
 
-            foreach ($response['links'] as $link) {
-                if (($link['rel'] ?? null) === 'approve' && !empty($link['href'])) {
-                    return redirect()->away($link['href']);
+            $result = $this->orderService->pay($order);
+            $response = $result['response'] ?? null;
+            $orderId = $result['orderId'] ?? null;
+
+            try {
+                // Guard against missing/failed response
+                if (!is_array($response) || empty($response['links'])) {
+                    return redirect()->route('orders.show', ['orderId' => $orderId])
+                        ->with('status', 'Payment could not be initiated.');
                 }
-            }
 
+                foreach ($response['links'] as $link) {
+                    if (($link['rel'] ?? null) === 'approve' && !empty($link['href'])) {
+                        return redirect()->away($link['href']);
+                    }
+                }
+
+                return redirect()->route('orders.show', ['orderId' => $orderId])
+                    ->with('status', 'Payment link not available.');
+            } catch (\Throwable $e) {
+                return redirect()->route('orders.show', ['orderId' => $orderId])
+                    ->with('status', 'Payment could not be initiated: ' . $e->getMessage());
+            }
+        } catch (\Throwable $th) {
             return redirect()->route('orders.show', ['orderId' => $order->id])
-                ->with('status', 'Payment link not available.');
-        } catch (\Throwable $e) {
-            return redirect()->route('orders.show', ['orderId' => $order->id])
-                ->with('status', 'Payment could not be initiated: ' . $e->getMessage());
+                ->withErrors('Could not process payment at this time.')
+                ->with('error', $th->getMessage());
         }
     }
 }
